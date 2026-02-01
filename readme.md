@@ -37,14 +37,14 @@ GOADURR creates a full-featured AD lab for pentest practice using `docker compos
 ### 2. Run it
 ```bash
 # Clone the repo
-git clone https://github.com/ripm4ge/goadurr
+git clone --recurse-submodules https://github.com/ripm4ge/goadurr
 cd goadurr
 
 # Start GOADURR
 docker compose up -d
 docker compose logs -f --tail=200
 
-# Start attack box
+# If you want an attack box
 docker compose --profile attackbox up -d kali
 ```
 

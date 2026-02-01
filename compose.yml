@@ -1,0 +1,153 @@
+x-goadvm-common: &goadvm-common
+  image: dockurr/windows:5.14
+  restart: unless-stopped
+  cap_add: ["NET_ADMIN"]
+  devices:
+    - /dev/kvm
+    - /dev/net/tun
+    - /dev/vhost-net
+  entrypoint: ["/entrypoint-bridge.sh"]
+  command: ["/run/entry.sh"]
+  stop_grace_period: 2m
+
+
+services:
+  dc01:
+    <<: *goadvm-common
+    container_name: goad-dc01
+    hostname: kingslanding  # rng MAC is created, based on hostname
+    environment:
+      VERSION: "2019"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+    ports:
+      - "8006:8006"
+    volumes:
+      - dc01_data:/storage
+      - ./bootstrap/install_dc01.bat:/oem/install.bat
+      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
+    networks:
+      goad_bridge:
+        ipv4_address: 192.168.56.110
+
+  dc02:
+    <<: *goadvm-common
+    container_name: goad-dc02
+    hostname: winterfell  
+    environment:
+      VERSION: "2019"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+    volumes:
+      - dc02_data:/storage
+      - ./bootstrap/install_dc02.bat:/oem/install.bat
+      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
+    networks:
+      goad_bridge:
+        ipv4_address: 192.168.56.111
+
+  dc03:
+    <<: *goadvm-common
+    container_name: goad-dc03
+    hostname: meereen
+    environment:
+      VERSION: "2019"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+    volumes:
+      - dc03_data:/storage
+      - ./bootstrap/install_dc03.bat:/oem/install.bat
+      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
+    networks:
+      goad_bridge:
+        ipv4_address: 192.168.56.112
+
+  srv01:
+    <<: *goadvm-common
+    container_name: goad-srv01
+    hostname: castelblack
+    environment:
+      VERSION: "2019"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+    volumes:
+      - srv01_data:/storage
+      - ./bootstrap/install_srv01.bat:/oem/install.bat
+      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
+    networks:
+      goad_bridge:
+        ipv4_address: 192.168.56.122
+
+  srv02:
+    <<: *goadvm-common
+    container_name: goad-srv02
+    hostname: braavos
+    environment:
+      VERSION: "2016"  # 2016 as per GOAD specs
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+    volumes:
+      - srv02_data:/storage
+      - ./bootstrap/install_srv02.bat:/oem/install.bat
+      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
+    networks:
+      goad_bridge:
+        ipv4_address: 192.168.56.123
+
+  provisioner:
+    build: ./provisioning
+    container_name: goad-provisioner
+    depends_on:
+      - dc01
+      - dc02
+      - dc03
+      - srv01
+      - srv02
+    networks:
+      goad_bridge:
+        ipv4_address: 192.168.56.100
+    volumes:
+      - ./GOAD:/goad             # GOAD subrepo
+      - ./inventory/inventory.ini:/inventory/inventory.ini 
+      - ansible_data:/goad/data  # persistence for "run once" marker
+    environment:
+      ANSIBLE_HOST_KEY_CHECKING: "False"
+      ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "1" 
+    restart: no
+
+  kali:
+    image: kasmweb/kali-rolling-desktop:1.18.0
+    container_name: goad-kali
+    profiles:
+      - attackbox
+    restart: unless-stopped
+    shm_size: "512m"
+    cap_add: ["NET_ADMIN"]
+    environment:
+      VNC_PW: "password"
+    ports:
+      - "6901:6901"
+    networks:
+      goad_bridge:
+        ipv4_address: 192.168.56.50
+
+networks:
+  goad_bridge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.56.0/24
+          gateway: 192.168.56.1
+
+volumes:
+  dc01_data:
+  dc02_data:
+  dc03_data:
+  srv01_data:
+  srv02_data:
+  ansible_data:

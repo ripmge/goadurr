@@ -1,0 +1,24 @@
+---
+- name: Pre-Flight - Network Patching for KVM/Docker
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: "[DC02] Ensure DNS Role and Tools are installed (Pre-Promotion)"
+      ansible.windows.win_feature:
+        name: DNS
+        state: present
+        include_management_tools: yes
+      when: inventory_hostname == 'dc02'
+    # ---------------------------------------------------------
+    # 1. FIX DC02 (Child DC) -> Points to DC01 (Parent)
+    # ---------------------------------------------------------
+    #- name: "[DC02] Hardcode Parent DC (DC01) in Hosts File"
+    #  ansible.windows.win_hosts:
+    #    state: present
+    #    canonical_name: "{{ item }}"
+    #    ip_address: "192.168.56.10"
+    #  loop:
+    #    - kingslanding
+    #    - kingslanding.sevenkingdoms.local
+    #    - sevenkingdoms.local
+    #  when: inventory_hostname == 'dc02'

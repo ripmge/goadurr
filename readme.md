@@ -1,26 +1,25 @@
-# GOADURR: Game of Active Directory containerized 🐐🏰🐳
-> **AD Lab in a box.**
+# GOADURR 🏰🐳
+> **Game of Active Directory in dockurr/windows.**
 
-## 🤷 But why?
+## What?
 
-Do you want to play around with the beauty that is **Micro$oft Active Directory** but your mind goes blank, when thinking about setting up lab ranges?  
-Do words like `Ansible`, `Terraform`, and `Proxmox` **make you enter flight, not fight mode**?  
+Do you want to play around with **Micro$oft Active Directory** but get annoyed by setting up lab ranges?  
 Do you dislike running a mini server 24/7 just for the **5 minutes per week that you'll actually use it**?
 
-**Then this is for you.**  
-GOADURR creates a full-featured AD lab for pentest practice using `docker compose`. It spawns QEMU/KVM containers that run the actual Windows VMs, handling all the messy networking glue and machine provisioning so you don't have to.
+**Then this might be for you.**  
+GOADURR sets up GOAD (Game of Active Directory) through `docker compose`. It spawns QEMU/KVM containers that run the actual Windows VMs, handling all networking glue and machine provisioning so you don't have to dedicate extra hardware for it.
 
-## 🐧 Target audience
-* **Linux/WSL Users:** Set up GOAD on your main device, which is Linux anyway, right? WSL might work, but is currently untested.
-* **Casual Labbers:** Spin up the lab when you need it, kill it when you don't.
-* **Container Enthusiasts:** People who believe everything looks better inside a container.
+## Who and why?
+* **People of culture:** Set up GOAD on your main device, which is Linux anyway, right? WSL probably works, maybe.
+* **Casual Labbing:** Spin up your lab when you need it, and keep it powered down at all other times, like a sane person.
+* **Container bonanza:** Everything looks better inside a ~~neat little box~~ container.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Requirements
-**Warning:** This project adds about **25GB** of downloads to the existing GOAD requirements (each container pulls its own Windows ISO).
+Since dockurr container images download each ISO at the container creation, this adds **25GB** of downloads to the existing GOAD requirements.
 
 **Hardware Specs:**
 | Component | Minimum Req | Notes |
@@ -34,10 +33,10 @@ GOADURR creates a full-featured AD lab for pentest practice using `docker compos
 > [!Warning] Check power settings  
 > Don’t let your host go to sleep during the first run.
 
-### 2. Run it
+### 2. Running it
 ```bash
 # Clone the repo
-git clone --recurse-submodules https://github.com/ripm4ge/goadurr
+git clone --recurse-submodules https://github.com/ripmge/goadurr
 cd goadurr
 
 # Start GOADURR
@@ -59,21 +58,20 @@ goad-provisioner  | [+] Marker file created. Future runs will be skipped.
 ```
 (Alternative check: `docker compose ps` → `provisioner` should eventually be `exited (0)`.)
 
-## 💻 How do I connect?
-This lab exposes local web UIs (open from your host browser):
-- DC01 console (troubleshooting): `http://localhost:8006`
-- Kali desktop (browser VNC): `https://localhost:6901` 
+### 3. Connecting to the lab
+Containers expose local web UIs:
+- DC01 console (for troubleshooting): `http://localhost:8006`
+- Kali desktop (web VNC): `https://localhost:6901` 
 - RDP from host to VM IPs (check table below for VM IP list)
 
 Kali credentials: `kasm_user:password`  
 Windows setup credentials: `Docker:admin`
 
 > [!Warning] Exposure  
-> Do **not** expose these ports to the internet. Change the VNC password before use.  
-> To be extra safe, bind ports to localhost only, e.g.`127.0.0.1:8006:8006`. 
+> For obvious reasons do **not** expose these ports to the internet, change passwords, etc.
 
 
-## 🐐 What is this GOAD you speak of?
+## About GOAD
 Game of Active Directory [Orange-Cyberdefense/GOAD](https://github.com/Orange-Cyberdefense/GOAD) is an AD lab environment for pentesting practice. It features multiple domains/servers and intentionally vulnerable configurations to learn common AD attacks.
 
 It consists of the following systems + a provisioner and attacker box added for GOADURR:
@@ -90,20 +88,22 @@ It consists of the following systems + a provisioner and attacker box added for 
 
 Docker network: `goad_bridge` = `192.168.56.0/24`
 
-> [!Info] What now?   
-> If you feel lost, check out the writeup from the GOAD developer [mayfly277](https://mayfly277.github.io/categories/goad/), or any other GOAD walkthrough.
+> [!Info] Help?   
+> GOAD developer writeup available here [mayfly277](https://mayfly277.github.io/categories/goad/)
 
-## ⚙️ Technical overview
+## Technical overview
 
 The heavy lifting is done by [dockur/windows](https://github.com/dockur/windows). The project uses QEMU/KVM inside Docker containers to spin up Windows VMs. It is itself based on the [qemus/qemu](https://github.com/qemus/qemu) container project.
 
-**The networking problem:** default qemu/dockur containers use NAT, and Active Directory hates NAT.
+**Networking is hard:** default qemu/dockur containers use NAT, and Active Directory hates NAT.
 - *Why?* Domain Controllers (DCs) register the internal QEMU VM IP (e.g., 172.x) in DNS. When other machines try to talk to the DC, they get the NAT'd, unreachable IP, causing all kinds of headaches.
 - *Solution:* Modifying the container entrypoint to set up a **bridge + tap** interface so the VM can bridge directly onto the Docker network. This avoids host-side `macvlan` complexity and ensures domain controllers use the correct IP and DNS settings.
 
+To achieve this, we are setting variables in an custom script(`entrypoint-bridge.sh`), which get passed to the original entrypoint script, so that QEMU creates the right interface type.
+Additionally there are individual entrypoint scripts for each windows machine (e.g. `install_dc01.bat`), setting a static IP for the VM different from the compose assigned IP of the surrounding container. This step takes care of prepping machines for GOAD ansible setup.
 
-## 🛠️ Maintenance & Troubleshooting
-As with the original GOAD, if a task fails (`Ansible`), simply restarting the provisioner usually fixes it:
+## Troubleshooting
+As with the original GOAD, if a task fails (thanks `Ansible` ...), simply restarting the provisioner usually fixes it:
 ```bash
 docker compose up provisioner
 ```
@@ -123,8 +123,8 @@ docker compose run --rm --entrypoint \
 ```
 
 ---
-## 🤝 Acknowledgments
-This project is basic glue between these awesome projects — go check them out:
+## References, once again:
+This project is essentially duct taping together these two repos:
 
 - **GOAD** [Orange-Cyberdefense/GOAD](https://github.com/Orange-Cyberdefense/GOAD)
 - **Dockur Windows** [dockur/windows](https://github.com/dockur/windows)

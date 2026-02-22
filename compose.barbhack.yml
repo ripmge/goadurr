@@ -1,0 +1,136 @@
+x-goadvm-common: &goadvm-common
+  image: dockurr/windows:5.14
+  restart: unless-stopped
+  cap_add: ["NET_ADMIN"]
+  devices:
+    - /dev/kvm
+    - /dev/net/tun
+    - /dev/vhost-net
+  entrypoint: ["/entrypoint-bridge.sh"]
+  command: ["/run/entry.sh"]
+  stop_grace_period: 2m
+
+
+services:
+  barb-dc01:
+    <<: *goadvm-common
+    container_name: barb-dc01
+    hostname: blackpearl  # rng MAC is created, based on hostname
+    environment:
+      VERSION: "2022"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+    ports:
+      - "8006:8006"
+    volumes:
+      - barb_dc01_data:/storage
+      - ./barb/bootstrap/install_dc01.bat:/oem/install.bat
+      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
+    networks:
+      barb_bridge:
+        ipv4_address: 192.168.10.110
+
+  barb-srv01:
+    <<: *goadvm-common
+    container_name: barb-srv01
+    hostname: jollyroger  
+    environment:
+      VERSION: "2022"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+    volumes:
+      - barb_srv01_data:/storage
+      - ./barb/bootstrap/install_srv01.bat:/oem/install.bat
+      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
+    networks:
+      barb_bridge:
+        ipv4_address: 192.168.10.111
+
+  barb-srv02:
+    <<: *goadvm-common
+    container_name: barb-srv02
+    hostname: queenrev
+    environment:
+      VERSION: "2022"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+    volumes:
+      - barb_srv02_data:/storage
+      - ./barb/bootstrap/install_srv02.bat:/oem/install.bat
+      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
+    networks:
+      barb_bridge:
+        ipv4_address: 192.168.10.112
+
+  barb-srv03:
+    <<: *goadvm-common
+    container_name: barb-srv03
+    hostname: flyingdutchman
+    environment:
+      VERSION: "2022"
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+      DISK_SIZE: "40G"
+    volumes:
+      - barb_srv03_data:/storage
+      - ./barb/bootstrap/install_srv03.bat:/oem/install.bat
+      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
+    networks:
+      barb_bridge:
+        ipv4_address: 192.168.10.113
+
+  barb-provisioner:
+    build: 
+      context: ./barb/provisioning
+      dockerfile: ./Dockerfile.barb
+    container_name: barb-provisioner
+    depends_on:
+      - dc01
+      - srv01
+      - srv02
+      - srv03
+    networks:
+      barb_bridge:
+        ipv4_address: 192.168.10.100
+    volumes:
+      - ./netexec/Barbhack-2025:/barb             # GOAD subrepo
+      - barb_ansible_data:/barb/data  # persistence for "run once" marker
+      - ./barb/inventory/inventory.ini:/inventory/inventory.ini 
+    environment:
+      ANSIBLE_HOST_KEY_CHECKING: "False"
+      ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "1" 
+    restart: no
+
+  barb-kali:
+    image: kasmweb/kali-rolling-desktop:1.18.0
+    container_name: barb-kali
+    profiles:
+      - kali
+    restart: unless-stopped
+    shm_size: "512m"
+    cap_add: ["NET_ADMIN"]
+    environment:
+      VNC_PW: "password"
+    ports:
+      - "6901:6901"
+    networks:
+      barb_bridge:
+        ipv4_address: 192.168.10.50
+
+networks:
+  barb_bridge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24
+          gateway: 192.168.10.1
+
+volumes:
+  barb_dc01_data:
+  barb_srv03_data:
+  barb_srv01_data:
+  barb_srv02_data:
+  barb_ansible_data:

@@ -102,6 +102,14 @@ The heavy lifting is done by [dockur/windows](https://github.com/dockur/windows)
 To achieve this, we are setting variables in an custom script(`entrypoint-bridge.sh`), which get passed to the original entrypoint script, so that QEMU creates the right interface type.
 Additionally there are individual entrypoint scripts for each windows machine (e.g. `install_dc01.bat`), setting a static IP for the VM different from the compose assigned IP of the surrounding container. This step takes care of prepping machines for GOAD ansible setup.
 
+## About /dev/kvm
+In case you are as suspicious as I was about the implications of giving containers access to `/dev/kvm`:
+- They cannot mount/browse the host filesystem via /dev/kvm. File access only happens if you give them host paths (bind mounts) or host block devices. We are just mounting named volumes + a few specific files — that’s the boundary.
+- They cannot “take over the host” by default just because it can run Windows VMs. VM code runs in guest mode; the host kernel still mediates everything.
+- The main practical host impact is DoS: VM workloads can chew CPU/RAM/disk IO and make the host slow or unstable without Docker resource limits.
+- The main “escape” class is kernel bugs: `/dev/kvm` (and also `/dev/vhost-net`) are kernel interfaces. Exploiting them would require a vulnerability, not just “having the device.”
+- Networking additions (`NET_ADMIN` + tun) mostly affect the lab network, not your host’s filesystem. The big footgun is routing/bridging from lab → your real LAN, not “host compromise”. Host as in: the system running compose. 
+
 ## Troubleshooting
 As with the original GOAD, if a task fails (thanks `Ansible` ...), simply restarting the provisioner usually fixes it:
 ```bash

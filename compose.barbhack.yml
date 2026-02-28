@@ -88,10 +88,10 @@ services:
       dockerfile: ./Dockerfile.barb
     container_name: barb-provisioner
     depends_on:
-      - dc01
-      - srv01
-      - srv02
-      - srv03
+      - barb-dc01
+      - barb-srv01
+      - barb-srv02
+      - barb-srv03
     networks:
       barb_bridge:
         ipv4_address: 192.168.10.100

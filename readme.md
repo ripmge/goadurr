@@ -1,18 +1,19 @@
 # GOADURR 🏰🐳
 > **Game of Active Directory in dockurr/windows.**
 
-## What?
+## What is it?
 
 Do you want to play around with **Micro$oft Active Directory** but get annoyed by setting up lab ranges?  
 Do you dislike running a mini server 24/7 just for the **5 minutes per week that you'll actually use it**?
-
 **Then this might be for you.**  
-GOADURR sets up GOAD (Game of Active Directory) through `docker compose`. It spawns QEMU/KVM containers that run the actual Windows VMs, handling all networking glue and machine provisioning so you don't have to dedicate extra hardware for it.
 
-## Who and why?
-* **People of culture:** Set up GOAD on your main device, which is Linux anyway, right? WSL probably works, maybe.
-* **Casual Labbing:** Spin up your lab when you need it, and keep it powered down at all other times, like a sane person.
-* **Container bonanza:** Everything looks better inside a ~~neat little box~~ container.
+GOADURR sets up GOAD (Game of Active Directory) through `docker compose`. It spawns QEMU/KVM containers that run the actual Windows VMs, handling all networking glue and machine provisioning so you don't have to dedicate extra hardware towards your lab.
+
+## Target audience
+* **People of culture:** Set up GOAD on your main device, which is Linux anyway... right? 
+WSL probably works too.
+* **Casual labbers:** Spin up your lab when you need it, and keep it powered down at all other times. Like a sane person would do it.
+* **Container bonanza fans:** Everything looks better inside a container.
 
 ---
 
@@ -33,32 +34,29 @@ Since dockurr container images download each ISO at the container creation, this
 > [!Warning] Check power settings  
 > Don’t let your host go to sleep during the first run.
 
-### 2. Running it
+### 2. Run it
 ```bash
 # Clone the repo
 git clone --recurse-submodules https://github.com/ripmge/goadurr
 cd goadurr
 
 # Start GOADURR
-docker compose up -d
-docker compose logs -f --tail=200
-
-# If you want an attack box
-docker compose --profile attackbox up -d kali
+docker compose up 
 ```
-
 **Provisioning is done** when the `provisioner` container shows the following output:
 
 ```bash
-docker compose logs provisioner
-
 # shows the following after successful initial setup
 goad-provisioner  | [+] Provisioning completed successfully!
 goad-provisioner  | [+] Marker file created. Future runs will be skipped.
 ```
-(Alternative check: `docker compose ps` → `provisioner` should eventually be `exited (0)`.)
 
-### 3. Connecting to the lab
+- if you also want to deploy Kali
+```
+docker compose --profile attackbox up -d kali
+```
+
+### 3. Connect to the lab
 Containers expose local web UIs:
 - DC01 console (for troubleshooting): `http://localhost:8006`
 - Kali desktop (web VNC): `https://localhost:6901` 
@@ -104,14 +102,14 @@ Additionally there are individual entrypoint scripts for each windows machine (e
 
 ## About /dev/kvm
 In case you are as suspicious as I was about the implications of giving containers access to `/dev/kvm`:
-- They cannot mount/browse the host filesystem via /dev/kvm. File access only happens if you give them host paths (bind mounts) or host block devices. We are just mounting named volumes + a few specific files — that’s the boundary.
-- They cannot “take over the host” by default just because it can run Windows VMs. VM code runs in guest mode; the host kernel still mediates everything.
+- First off, they cannot mount/browse the host filesystem via /dev/kvm. File access only happens if you give cotainers host paths (bind mounts) or host block devices. We are just mounting named volumes + a few specific files, so no access to host file system.
+- There is no host takeover by default just because it can run Windows VMs. VM code runs in guest mode; the host kernel still mediates everything.
 - The main practical host impact is DoS: VM workloads can chew CPU/RAM/disk IO and make the host slow or unstable without Docker resource limits.
-- The main “escape” class is kernel bugs: `/dev/kvm` (and also `/dev/vhost-net`) are kernel interfaces. Exploiting them would require a vulnerability, not just “having the device.”
-- Networking additions (`NET_ADMIN` + tun) mostly affect the lab network, not your host’s filesystem. The big footgun is routing/bridging from lab → your real LAN, not “host compromise”. Host as in: the system running compose. 
+- The main escape class is kernel bugs: `/dev/kvm` and also `/dev/vhost-net` are kernel interfaces. Exploiting them would require a vulnerability, not just having access to the device.
+- Networking additions (`NET_ADMIN` + tun) primarily affect the lab network. The big footgun is routing/bridging from lab → your real LAN.  
 
 ## Troubleshooting
-As with the original GOAD, if a task fails (thanks `Ansible` ...), simply restarting the provisioner usually fixes it:
+As with the original GOAD, if a task fails (most often thanks to `Ansible`), simply restarting the provisioner usually fixes it:
 ```bash
 docker compose up provisioner
 ```

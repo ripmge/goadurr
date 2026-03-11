@@ -22,7 +22,7 @@ services:
       CPU_CORES: "2"
       DISK_SIZE: "40G"
     ports:
-      - "8006:8006"
+      - "127.0.0.1:8006:8006"
     volumes:
       - barb_dc01_data:/storage
       - ./barb/bootstrap/install_dc01.bat:/oem/install.bat

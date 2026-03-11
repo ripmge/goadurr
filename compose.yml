@@ -124,7 +124,7 @@ services:
     image: kasmweb/kali-rolling-desktop:1.18.0
     container_name: goad-kali
     profiles:
-      - attackbox
+      - kali
     restart: unless-stopped
     shm_size: "512m"
     cap_add: ["NET_ADMIN"]

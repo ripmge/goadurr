@@ -51,9 +51,19 @@ goad-provisioner  | [+] Provisioning completed successfully!
 goad-provisioner  | [+] Marker file created. Future runs will be skipped.
 ```
 
-- if you also want to deploy Kali
+- if you also want to **deploy Kali**
+```bash
+docker compose --profile kali up 
+
+## already got the lab and only want to bring up Kali
+docker compose --profile kali up -d kali
 ```
-docker compose --profile attackbox up -d kali
+
+- if you want to deploy **netexec lab from Barbhack 2025** [link](https://github.com/Pennyw0rth/NetExec-Lab/tree/main/Barbhack-2025)
+```bash
+docker compose -f compose.barbhack.yml up 
+## deploy it all with kali
+docker compose -f compose.barbhack.yml --profile kali up 
 ```
 
 ### 3. Connect to the lab

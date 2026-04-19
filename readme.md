@@ -1,5 +1,5 @@
 # MGS - Magic GOAD sumoning ⛧ 🐐🕯️
-> **Deploy security labs with docker.**  
+> **Deploy security labs with docker**  
 
 ![](img/mgs.png)
 
@@ -49,7 +49,7 @@ Deployment time depends on lab:
 ### Connect to lab
 > Note:  
 This project is based on `dockurr/windows` container images ([link](https://github.com/dockur/windows)), which in turn is based on `qemus/qemu` ([link](https://github.com/qemus/qemu)). These projects use docker containers to run virtual machines using QEMU. They come with a web-based VNC viewer to check in on VM status.   
-This is also available here. You can access http://localhost:8006 to check in on the primary VM.
+The vnc-viewer is also available in MGS. You can access it under http://localhost:8006 to check in on the primary VM.
 
 
 Depending on your use case, there are generally 2 ways to access the labs.

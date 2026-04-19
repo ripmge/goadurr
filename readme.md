@@ -1,4 +1,4 @@
-# MGS - Magic GOAD sumoning ⛧ 🐐🕯️
+# MGS - Magic GOAD summoning ⛧ 🐐🕯️
 > **Deploy security labs with docker**  
 
 ![](img/mgs.png)

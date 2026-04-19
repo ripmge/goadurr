@@ -1,3 +1,8 @@
+### TODO
+# instead of using inventory, point to inventory files of GOAD
+# instead of hardcoding IPs in entrypoint script to check for up, use ansible on inventory to check for up
+# can we give ((ip_range)) as env var to provisioner, so that we can adjust ips from compose file? 
+
 x-goadvm-common: &goadvm-common
   image: dockurr/windows:5.14
   restart: unless-stopped
@@ -12,101 +17,83 @@ x-goadvm-common: &goadvm-common
 
 
 services:
-  barb-dc01:
+  dracarys-dc01:
     <<: *goadvm-common
-    container_name: barb-dc01
-    hostname: blackpearl  # rng MAC is created, based on hostname
+    container_name: dracarys-dc01
+    hostname: DC01  # rng MAC is created, based on hostname
     environment:
-      VERSION: "2022"
+      VERSION: "2025"
       RAM_SIZE: "4G"
       CPU_CORES: "2"
       DISK_SIZE: "40G"
     ports:
       - "127.0.0.1:8006:8006"
     volumes:
-      - barb_dc01_data:/storage
-      - ./barb/bootstrap/install_dc01.bat:/oem/install.bat
+      - dracarys_dc01_data:/storage
+      - ./dracarys/bootstrap/install_dc01.bat:/oem/install.bat
       - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
     networks:
-      barb_bridge:
+      dracarys_bridge:
         ipv4_address: 192.168.10.110
 
-  barb-srv01:
+  dracarys-srv01:
     <<: *goadvm-common
-    container_name: barb-srv01
-    hostname: jollyroger  
+    container_name: dracarys-srv01
+    hostname: SRV01  
     environment:
-      VERSION: "2022"
+      VERSION: "2025"
       RAM_SIZE: "4G"
       CPU_CORES: "2"
       DISK_SIZE: "40G"
     volumes:
-      - barb_srv01_data:/storage
-      - ./barb/bootstrap/install_srv01.bat:/oem/install.bat
+      - dracarys_srv01_data:/storage
+      - ./dracarys/bootstrap/install_srv01.bat:/oem/install.bat
       - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
     networks:
-      barb_bridge:
+      dracarys_bridge:
         ipv4_address: 192.168.10.111
 
-  barb-srv02:
+  dracarys-lin01:
     <<: *goadvm-common
-    container_name: barb-srv02
-    hostname: queenrev
+    container_name: dracarys-lin01
+    hostname: LX01
     environment:
       VERSION: "2022"
       RAM_SIZE: "4G"
       CPU_CORES: "2"
       DISK_SIZE: "40G"
     volumes:
-      - barb_srv02_data:/storage
-      - ./barb/bootstrap/install_srv02.bat:/oem/install.bat
+      - dracarys_lin01_data:/storage
+      - ./dracarys/bootstrap/install_lin01.bat:/oem/install.bat
       - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
     networks:
-      barb_bridge:
+      dracarys_bridge:
         ipv4_address: 192.168.10.112
 
-  barb-srv03:
-    <<: *goadvm-common
-    container_name: barb-srv03
-    hostname: flyingdutchman
-    environment:
-      VERSION: "2022"
-      RAM_SIZE: "4G"
-      CPU_CORES: "2"
-      DISK_SIZE: "40G"
-    volumes:
-      - barb_srv03_data:/storage
-      - ./barb/bootstrap/install_srv03.bat:/oem/install.bat
-      - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
-    networks:
-      barb_bridge:
-        ipv4_address: 192.168.10.113
-
-  barb-provisioner:
+  dracarys-provisioner:
     build: 
-      context: ./barb/provisioning
-      dockerfile: ./Dockerfile.barb
-    container_name: barb-provisioner
+      context: ./dracarys/provisioning
+      dockerfile: ./Dockerfile.dracarys
+    container_name: dracarys-provisioner
     depends_on:
-      - barb-dc01
-      - barb-srv01
-      - barb-srv02
-      - barb-srv03
+      - dracarys-dc01
+      - dracarys-srv01
+      - dracarys-lin01
     networks:
-      barb_bridge:
+      dracarys_bridge:
         ipv4_address: 192.168.10.100
     volumes:
-      - ./netexec/Barbhack-2025:/barb             # GOAD subrepo
-      - barb_provisioner:/barb/data  # persistence for "run once" marker
-      - ./barb/inventory/inventory.ini:/inventory/inventory.ini 
+      - ./GOAD:/goad             # GOAD subrepo
+      - dracarys_provisioner:/dracarys/data  # persistence for "run once" marker
+      - ./dracarys/inventory/inventory.ini:/inventory/inventory.ini 
     environment:
       ANSIBLE_HOST_KEY_CHECKING: "False"
       ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "1" 
     restart: no
 
-  barb-kali:
+  dracarys-kali:
     image: kasmweb/kali-rolling-desktop:1.18.0
-    container_name: barb-kali
+    container_name: dracarys-kali
     profiles:
       - kali
     restart: unless-stopped
@@ -117,11 +104,11 @@ services:
     ports:
       - "6901:6901"
     networks:
-      barb_bridge:
+      dracarys_bridge:
         ipv4_address: 192.168.10.50
 
 networks:
-  barb_bridge:
+  dracarys_bridge:
     driver: bridge
     ipam:
       config:
@@ -129,8 +116,7 @@ networks:
           gateway: 192.168.10.1
 
 volumes:
-  barb_dc01_data:
-  barb_srv03_data:
-  barb_srv01_data:
-  barb_srv02_data:
-  barb_provisioner:
+  dracarys_dc01_data:
+  dracarys_lin01_data:
+  dracarys_srv01_data:
+  dracarys_provisioner:

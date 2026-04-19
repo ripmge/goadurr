@@ -1,4 +1,4 @@
-netsh interface ipv4 set address name="Ethernet" static 192.168.56.22 255.255.255.0 192.168.56.1
+netsh interface ipv4 set address name="Ethernet" static 192.168.10.11 255.255.255.0 192.168.10.1
 netsh interface ipv4 set dns name="Ethernet" static 8.8.8.8
 
 :: Disable Windows Firewall

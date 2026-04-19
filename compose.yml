@@ -21,11 +21,12 @@ services:
       RAM_SIZE: "4G"
       CPU_CORES: "2"
       DISK_SIZE: "40G"
+      VM_IP: "192.168.56.10"
     ports:
-      - "8006:8006"
+      - "127.0.0.1:8006:8006"
     volumes:
       - dc01_data:/storage
-      - ./bootstrap/install_dc01.bat:/oem/install.bat
+      - ./bootstrap/install.bat:/install.bat:ro
       - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
     networks:
       goad_bridge:
@@ -40,9 +41,10 @@ services:
       RAM_SIZE: "4G"
       CPU_CORES: "2"
       DISK_SIZE: "40G"
+      VM_IP: "192.168.56.11"
     volumes:
       - dc02_data:/storage
-      - ./bootstrap/install_dc02.bat:/oem/install.bat
+      - ./bootstrap/install.bat:/install.bat:ro
       - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
     networks:
       goad_bridge:
@@ -57,9 +59,10 @@ services:
       RAM_SIZE: "4G"
       CPU_CORES: "2"
       DISK_SIZE: "40G"
+      VM_IP: "192.168.56.12"
     volumes:
       - dc03_data:/storage
-      - ./bootstrap/install_dc03.bat:/oem/install.bat
+      - ./bootstrap/install.bat:/install.bat:ro
       - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
     networks:
       goad_bridge:
@@ -74,9 +77,10 @@ services:
       RAM_SIZE: "4G"
       CPU_CORES: "2"
       DISK_SIZE: "40G"
+      VM_IP: "192.168.56.22"
     volumes:
       - srv01_data:/storage
-      - ./bootstrap/install_srv01.bat:/oem/install.bat
+      - ./bootstrap/install.bat:/install.bat:ro
       - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
     networks:
       goad_bridge:
@@ -91,9 +95,10 @@ services:
       RAM_SIZE: "4G"
       CPU_CORES: "2"
       DISK_SIZE: "40G"
+      VM_IP: "192.168.56.23"
     volumes:
       - srv02_data:/storage
-      - ./bootstrap/install_srv02.bat:/oem/install.bat
+      - ./bootstrap/install.bat:/install.bat:ro
       - ./bootstrap/entrypoint-bridge.sh:/entrypoint-bridge.sh:ro
     networks:
       goad_bridge:
@@ -113,14 +118,15 @@ services:
         ipv4_address: 192.168.56.100
     volumes:
       - ./GOAD:/goad             # GOAD subrepo
-      - ./inventory/inventory.ini:/inventory/inventory.ini 
-      - ansible_data:/goad/data  # persistence for "run once" marker
+      #- ./inventory/inventory.ini:/inventory/inventory.ini 
+      - goad_provisioner:/provisioner/data  # persistence for "run once" marker
+      - ./provisioning/entrypoint.sh:/entrypoint.sh
     environment:
       ANSIBLE_HOST_KEY_CHECKING: "False"
       ANSIBLE_ALLOW_BROKEN_CONDITIONALS: "1" 
     restart: no
 
-  kali:
+  goad-kali:
     image: kasmweb/kali-rolling-desktop:1.18.0
     container_name: goad-kali
     profiles:
@@ -150,4 +156,4 @@ volumes:
   dc03_data:
   srv01_data:
   srv02_data:
-  ansible_data:
+  goad_provisioner:
